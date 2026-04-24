@@ -164,9 +164,11 @@
     </div>
 
     <script>
+        // 把你的硅基流动 API Key 填在这里
+        const API_KEY = 'sk-xxxxxxxxxxxxxxxx'; // 替换为你的真实 API Key
+
         async function generateImage() {
             const prompt = document.getElementById('prompt').value.trim();
-            const size = document.getElementById('size').value;
             const btn = document.getElementById('generateBtn');
             const loading = document.getElementById('loading');
             const result = document.getElementById('result');
@@ -183,20 +185,27 @@
             error.classList.remove('active');
             
             try {
-                const response = await fetch('/api/generate', {
+                const response = await fetch('https://api.siliconflow.cn/v1/images/generations', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt, size })
+                    headers: {
+                        'Authorization': `Bearer ${API_KEY}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        model: 'stabilityai/stable-diffusion-3-5-large',
+                        prompt: prompt,
+                        n: 1,
+                    }),
                 });
                 
                 const data = await response.json();
                 
-                if (data.error) {
-                    throw new Error(data.error);
+                if (!response.ok) {
+                    throw new Error(data.error?.message || 'API 请求失败');
                 }
                 
-                document.getElementById('generatedImage').src = data.imageUrl;
-                document.getElementById('downloadBtn').href = data.imageUrl;
+                document.getElementById('generatedImage').src = data.data[0].url;
+                document.getElementById('downloadBtn').href = data.data[0].url;
                 result.classList.add('active');
                 
             } catch (err) {
