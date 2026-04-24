@@ -3,25 +3,23 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: '只允许 POST 请求' });
   }
 
-  const { prompt, size, quality } = req.body;
+  const { prompt, size } = req.body;
 
   if (!prompt) {
     return res.status(400).json({ error: '缺少描述文本' });
   }
 
   try {
-    const response = await fetch('https://api.openai.com/v1/images/generations', {
+    const response = await fetch('https://api.siliconflow.cn/v1/images/generations', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${process.env.SILICONFLOW_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-image-2',
+        model: 'stabilityai/stable-diffusion-3-5-large',
         prompt: prompt,
         n: 1,
-        size: size || '1024x1024',
-        quality: quality || 'standard',
       }),
     });
 
