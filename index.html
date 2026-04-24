@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的 AI 图像生成器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .options {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        select {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            background: white;
+        }
+        button {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .loading.active { display: block; }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .result {
+            display: none;
+            margin-top: 30px;
+            text-align: center;
+        }
+        .result.active { display: block; }
+        .result img {
+            max-width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .download-btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 12px 30px;
+            background: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        .error {
+            display: none;
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .error.active { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 AI 图像生成器</h1>
+        <p class="subtitle">输入描述，AI 为你生成图像</p>
+        
+        <textarea id="prompt" placeholder="例如：一只戴着墨镜的猫在海边冲浪，卡通风格..."></textarea>
+        
+        <div class="options">
+            <select id="size">
+                <option value="1024x1024">正方形 (1024×1024)</option>
+                <option value="1792x1024">宽屏 (1792×1024)</option>
+                <option value="1024x1792">竖屏 (1024×1792)</option>
+            </select>
+            <select id="quality">
+                <option value="standard">标准质量</option>
+                <option value="hd">高清质量</option>
+            </select>
+        </div>
+        
+        <button id="generateBtn" onclick="generateImage()">
+            ✨ 生成图像
+        </button>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>AI 正在创作中，请稍候...</p>
+        </div>
+        
+        <div class="error" id="error"></div>
+        
+        <div class="result" id="result">
+            <img id="generatedImage" src="" alt="生成的图像">
+            <br>
+            <a id="downloadBtn" class="download-btn" href="#" target="_blank">下载图像</a>
+        </div>
+    </div>
+
+    <script>
+        async function generateImage() {
+            const prompt = document.getElementById('prompt').value.trim();
+            const size = document.getElementById('size').value;
+            const quality = document.getElementById('quality').value;
+            const btn = document.getElementById('generateBtn');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            const error = document.getElementById('error');
+            
+            if (!prompt) {
+                alert('请输入图像描述！');
+                return;
+            }
+            
+            btn.disabled = true;
+            loading.classList.add('active');
+            result.classList.remove('active');
+            error.classList.remove('active');
+            
+            try {
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt, size, quality })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                document.getElementById('generatedImage').src = data.imageUrl;
+                document.getElementById('downloadBtn').href = data.imageUrl;
+                result.classList.add('active');
+                
+            } catch (err) {
+                error.textContent = '生成失败：' + err.message;
+                error.classList.add('active');
+            } finally {
+                btn.disabled = false;
+                loading.classList.remove('active');
+            }
+        }
+        
+        document.getElementById('prompt').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                generateImage();
+            }
+        });
+    </script>
+</body>
+</html>
