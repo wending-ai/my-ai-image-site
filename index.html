@@ -143,10 +143,6 @@
                 <option value="1792x1024">宽屏 (1792×1024)</option>
                 <option value="1024x1792">竖屏 (1024×1792)</option>
             </select>
-            <select id="quality">
-                <option value="standard">标准质量</option>
-                <option value="hd">高清质量</option>
-            </select>
         </div>
         
         <button id="generateBtn" onclick="generateImage()">
@@ -171,7 +167,6 @@
         async function generateImage() {
             const prompt = document.getElementById('prompt').value.trim();
             const size = document.getElementById('size').value;
-            const quality = document.getElementById('quality').value;
             const btn = document.getElementById('generateBtn');
             const loading = document.getElementById('loading');
             const result = document.getElementById('result');
@@ -191,7 +186,7 @@
                 const response = await fetch('/api/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt, size, quality })
+                    body: JSON.stringify({ prompt, size })
                 });
                 
                 const data = await response.json();
